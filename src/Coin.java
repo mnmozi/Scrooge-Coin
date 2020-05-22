@@ -16,7 +16,7 @@ public class Coin {
     }
 
     public String toString() {
-        return "Coin in: " + transactionId + " At index: " + indexInTransaction + " is worth: " + value;
+        return "Created_At: " + transactionId + ", At_index: " + indexInTransaction + ", Worth: " + value + "\n";
     }
 
     public boolean equals(Coin coin) {

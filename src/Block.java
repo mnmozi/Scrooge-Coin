@@ -27,11 +27,11 @@ public class Block {
     }
 
     public String toString() {
-        String output = "Block: \n";
+        String output = "-------------Block------------- \n";
         for (int i = 0; i < this.transactions.size(); i++) {
             output += this.transactions.get(i).toString() + "\n";
         }
-        output += this.prevBlockHashHex;
+        output += "Hash of Previous Block is: " + this.prevBlockHashHex;
         return output;
     }
 

@@ -1,109 +1,165 @@
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.Signature;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class App {
-    public static void main(String[] args) throws Exception {
-        // this will save the the public keys of the users to uses them later
-        // ArrayList<PublicKey> publicKeys = new ArrayList<PublicKey>();
+    public static boolean sign(Transaction transaction, int user, String key)
+            throws InvalidKeySpecException, IOException, NoSuchAlgorithmException, NoSuchProviderException,
+            InvalidKeyException, InvalidKeyException, SignatureException, SignatureException {
 
-        // create the users folder that will contain all the users info
-        // File file = new File("users");
-        // boolean bool = file.mkdir();
-        // if (!bool) {
-        // System.out.println("Sorry couldn’t create specified directory: users");
-        // }
-        // // create 10 users first where the first user is the scrooge
-        // for (int i = 0; i < 10; i++) {
-        // // generate public and private key for the user and save them in a separate
-        // // files
-        // KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
-        // keyPairGenerator.initialize(1024);
-        // KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        // PublicKey publicKey = keyPair.getPublic();
-        // publicKeys.add(publicKey);
-        // PrivateKey privateKey = keyPair.getPrivate();
-        // byte[] publicKeyBytes = publicKey.getEncoded();
-        // byte[] privatecKeyBytes = privateKey.getEncoded();
-        // // creating the file directories
-        // File filePerUser = new File("users/" + i);
-        // boolean bool2 = filePerUser.mkdir();
-        // if (!bool2) {
-        // System.out.println("Sorry couldn’t create specified directory: " + i);
-        // }
-        // // save the keys at the files
-        // FileOutputStream publicfos = new FileOutputStream("users/" + i + "/public");
-        // publicfos.write(publicKeyBytes);
-        // publicfos.close();
-        // FileOutputStream privatefos = new FileOutputStream("users/" + i +
-        // "/private");
-        // privatefos.write(privatecKeyBytes);
-        // privatefos.close();
-        // }
+        File encryptedFile = new File("users/" + user + "/private.encrypted");
+        File decryptedFile = new File("users/" + user + "/private");
 
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
-        keyPairGenerator.initialize(1024);
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        PublicKey publicKey = keyPair.getPublic();
-        PrivateKey privateKey = keyPair.getPrivate();
-
-        byte[] keyy = privateKey.getEncoded();
-        FileOutputStream keyfoss = new FileOutputStream("private");
-        keyfoss.write(keyy);
-        keyfoss.close();
-
-        File ff = new File("private");
-        FileInputStream fiss = new FileInputStream(ff);
-        byte[] encKeyy = new byte[fiss.available()];
-        fiss.read(encKeyy);
-        fiss.close();
-
-        PKCS8EncodedKeySpec privateKeySpecc = new PKCS8EncodedKeySpec(encKeyy);
-        KeyFactory keyFactoryy = KeyFactory.getInstance("DSA", "SUN");
-        PrivateKey privateKeyfile = keyFactoryy.generatePrivate(privateKeySpecc);
-
-        Signature sign = Signature.getInstance("SHA256withDSA");
-        sign.initSign(privateKeyfile);
-        byte[] bytes = "Hello how are you".getBytes();
-        sign.update(bytes);
-        byte[] signature = sign.sign();
-        System.out.println(signature);
-
-        Signature sign2 = Signature.getInstance("SHA256withDSA");
-        sign2.initVerify(publicKey);
-        sign2.update(bytes);
-
-        System.out.println(sign2.verify(signature));
-
-        byte[] key = publicKey.getEncoded();
-        FileOutputStream keyfos = new FileOutputStream("suepk");
-        keyfos.write(key);
-        keyfos.close();
-
-        File f = new File("suepk");
+        try {
+            CryptoUtils.decrypt(key, encryptedFile, decryptedFile);
+        } catch (CryptoException ex) {
+            System.out.println(ex.getMessage());
+            return false;
+        }
+        File f = new File("users/" + user + "/private");
         FileInputStream fis = new FileInputStream(f);
         byte[] encKey = new byte[fis.available()];
         fis.read(encKey);
         fis.close();
+        f.delete();
 
-        X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(encKey);
+        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(encKey);
         KeyFactory keyFactory = KeyFactory.getInstance("DSA", "SUN");
-        PublicKey pubKey = keyFactory.generatePublic(pubKeySpec);
+        PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-        System.out.println(pubKey.equals(publicKey) + " the keys are");
-
-        Signature sign22 = Signature.getInstance("SHA256withDSA");
-        sign22.initVerify(pubKey);
-        sign22.update(bytes);
-        System.out.println(sign22.verify(signature));
+        Signature sign = Signature.getInstance("SHA256withDSA");
+        sign.initSign(privateKey);
+        byte[] bytes = transaction.transactionToSign().getBytes();
+        sign.update(bytes);
+        transaction.signature = sign.sign();
+        return true;
     }
+
+    public static void standardHelp() {
+        System.out.println("............." + "\n" + "............." + "\n" + ".............");
+        System.out.println(
+                "The command should be one of the upcomming commands:" + "\n" + "myinfo <USER_NUMBER_FROM_THE_LIST>"
+                        + "\n" + "send <VALUE> <FROM> <TO> <PASSWORD> <TRANSACTION_FROM_USER_INFO>" + "\n"
+                        + "createcoin <VALUE> <PASSWORD_OF_SCROOGE> <TO>" + "\n" + "checkblockchain <user>" + "\n"
+                        + "printblockchain" + "\n" + "exit");
+    }
+
+    public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InvalidKeyException,
+            SignatureException, InvalidKeySpecException, NoSuchProviderException {
+
+        int numberOfUsers = 10;
+        Users users = new Users(numberOfUsers);
+        Scrooge scrooge = new Scrooge(users.getPublicKeys(), numberOfUsers, users);
+
+        Scanner in = new Scanner(System.in);
+        standardHelp();
+        while (in.hasNextLine()) {
+            String command = in.nextLine();
+            String[] commandParts = command.split(" ");
+            if (commandParts[0].equals("myinfo")) {
+                if (commandParts.length > 2) {
+                    System.out.println("invalid command");
+                    continue;
+                }
+                int userIndex = Integer.parseInt(commandParts[1]);
+                int i = 0;
+                for (Transaction transaction : users.getPeopleInfo().get(userIndex)) {
+                    System.out.println("-------------" + "Transaction: " + i + "-------------");
+                    System.out.println(transaction.toString());
+                    i++;
+                }
+            } else if (commandParts[0].equals("send")) {
+                if (commandParts.length < 6) {
+                    System.out.println("invalid command");
+                    continue;
+                }
+
+                // get coins that he want to consume
+                int value = Integer.parseInt(commandParts[1]);
+                int from = Integer.parseInt(commandParts[2]);
+                int to = Integer.parseInt(commandParts[3]);
+                String password = commandParts[4];
+                ArrayList<Transaction> userTransaction = users.getPeopleInfo().get(from);
+                ArrayList<Coin> consumedCoins = new ArrayList<Coin>();
+                boolean errorOccured = false;
+                for (int i = 5; i < commandParts.length; i++) {
+                    int wantedTransaction = Integer.parseInt(commandParts[i]);
+                    if (wantedTransaction > userTransaction.size() - 1) {
+                        System.out.println("the is no transactoin at that index");
+                        errorOccured = true;
+                        break;
+                    }
+                    // if (wantedTransaction >
+                    // userTransaction.get(wantedTransaction).createdCoins.size() - 1) {
+                    // System.out.println("The Transaction you specified is not in your User
+                    // array");
+                    // continue;
+                    // }
+                    for (Coin currCoin : userTransaction.get(wantedTransaction).createdCoins) {
+                        consumedCoins.add(currCoin);
+                    }
+                }
+                if (errorOccured) {
+                    standardHelp();
+                    continue;
+                }
+                Transaction transaction = new Transaction("Transaction", value, consumedCoins,
+                        users.getPublicKeys().get(from), users.getPublicKeys().get(to));
+                boolean status = sign(transaction, from, password);
+                if (!status) {
+                    System.out.println("The password is wrong");
+                    standardHelp();
+                    continue;
+                }
+                scrooge.AddTransaction(transaction);
+            } else if (commandParts[0].equals("createcoin")) {
+                if (commandParts.length != 4) {
+                    System.out.println("invalid command");
+                    continue;
+                }
+                int value = Integer.parseInt(commandParts[1]);
+                String password = commandParts[2];
+                int to = Integer.parseInt(commandParts[3]);
+                Transaction coinCreation = new Transaction("coin Creation", value, null, users.getPublicKeys().get(0),
+                        users.getPublicKeys().get(to));
+                boolean status = sign(coinCreation, 0, password);
+                if (!status) {
+                    System.out.println("The password is wrong");
+                    standardHelp();
+                    continue;
+                }
+                boolean result = scrooge.createCoin(coinCreation);
+                if (result)
+                    System.out.println("COIN CREATED SCROOGE");
+            } else if (command.equals("exit")) {
+                break;
+            } else if (commandParts.length == 2 && commandParts[0].equals("checkblockchain")) {
+                int user = Integer.parseInt(commandParts[1]);
+                ArrayList<byte[]> userHashArray = users.getSavedHash().get(user);
+                Boolean result = scrooge.blockChain.sameBlockChain(userHashArray.get(userHashArray.size() - 1));
+                if (result) {
+                    System.out.println("the block chain is well");
+                } else
+                    System.out.println("the scroope manipulated the block Chain");
+            } else if (command.equals("printblockchain")) {
+                System.out.println(scrooge.blockChain.toString());
+            }
+            standardHelp();
+
+        }
+        in.close();
+
+    }
+
 }

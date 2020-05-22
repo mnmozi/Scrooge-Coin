@@ -19,15 +19,16 @@ public class Scrooge {
     // recived coins transactions
     ArrayList<ArrayList<Transaction>> peopleInfo;
     BlockChain blockChain;
-    Block currentBlock;
-    byte[] lastBlockHash;
-    int blocksize = 1;
+    private Block currentBlock;
+    private byte[] lastBlockHash;
+    private int blocksize = 1;
+    public Users users;
 
-    public Scrooge(ArrayList<PublicKey> publicKeys) throws InvalidKeyException, NoSuchAlgorithmException,
-            SignatureException, InvalidKeySpecException, NoSuchProviderException, IOException, InvalidKeySpecException,
-            NoSuchProviderException, IOException, InvalidKeySpecException, NoSuchProviderException, IOException,
-            InvalidKeySpecException, NoSuchProviderException, IOException {
-
+    public Scrooge(ArrayList<PublicKey> publicKeys, int numberOfUsers, Users users) throws InvalidKeyException,
+            NoSuchAlgorithmException, SignatureException, InvalidKeySpecException, NoSuchProviderException, IOException,
+            InvalidKeySpecException, NoSuchProviderException, IOException, InvalidKeySpecException,
+            NoSuchProviderException, IOException, InvalidKeySpecException, NoSuchProviderException, IOException {
+        this.users = users;
         this.publicKeys = new ArrayList<PublicKey>(publicKeys);
         this.peopleInfo = new ArrayList<ArrayList<Transaction>>();
         for (int i = 0; i < publicKeys.size(); i++) {
@@ -35,18 +36,18 @@ public class Scrooge {
         }
         currentBlock = new Block(null);
         this.blockChain = new BlockChain();
-        createFirstBlock();
+        createFirstBlock(numberOfUsers);
     }
 
     // in here i will add 10 transactions with 10 coins to the scrooge as a start
-    private void createFirstBlock() throws InvalidKeyException, NoSuchAlgorithmException, SignatureException,
-            InvalidKeySpecException, NoSuchProviderException, IOException {
-        for (int i = 0; i < 10; i++) {
-            Coin coin = new Coin(i, 0, 1);
-            ArrayList<Coin> coins = new ArrayList<Coin>();
-            coins.add(coin);
-            Transaction coinCreationTransaction = new Transaction("coin Creation", coins, null, publicKeys.get(0),
-                    publicKeys.get(0));
+    private void createFirstBlock(int numberOfUsers) throws InvalidKeyException, NoSuchAlgorithmException,
+            SignatureException, InvalidKeySpecException, NoSuchProviderException, IOException {
+        for (int i = 1; i < numberOfUsers; i++) {
+            // Coin coin = new Coin(i, 0, 1);
+            // ArrayList<Coin> coins = new ArrayList<Coin>();
+            // coins.add(coin);
+            Transaction coinCreationTransaction = new Transaction("coin Creation", 1, null, publicKeys.get(0),
+                    publicKeys.get(i));
 
             coinCreationTransaction.signature = sign(coinCreationTransaction);
             createCoin(coinCreationTransaction);
@@ -56,25 +57,31 @@ public class Scrooge {
     }
 
     // create new coins only scrooge can create a coin and send it to the wanted one
-    public void createCoin(Transaction coinCreationTransaction) throws NoSuchAlgorithmException, InvalidKeyException,
+    public boolean createCoin(Transaction coinCreationTransaction) throws NoSuchAlgorithmException, InvalidKeyException,
             SignatureException, InvalidKeySpecException, NoSuchProviderException, IOException {
 
         boolean signatureVerify = checkScroogeSignature(coinCreationTransaction);
         if (!signatureVerify) {
             System.out.println("coin creation failed: you are not the scrooge");
-            return;
+            return false;
+
         }
         coinCreationTransaction.id = blockChain.size() * blocksize + this.currentBlock.size();
         int index = 0;
+        // make a coin with the value
+        Coin newCoin = new Coin(coinCreationTransaction.sentValue);
+        coinCreationTransaction.createdCoins.add(newCoin);
         for (Coin coin : coinCreationTransaction.createdCoins) {
             coin.transactionId = coinCreationTransaction.id;
             coin.indexInTransaction = index++;
         }
-        boolean result = this.currentBlock.add(coinCreationTransaction);
-        System.out.println("the trasaction is: " + result);
+        this.currentBlock.add(coinCreationTransaction);
+        // if (result) {
+        // System.out.println("the trasaction sent succesfully");
+        // }
         boolean shouldAdd = currentBlock.checkLength();
         createNewBlock(shouldAdd);
-
+        return true;
         // // updating the users data
         // int indexOfUser = publicKeys.indexOf(coinCreationTransaction.receiver);
         // peopleInfo.get(indexOfUser).add(coinCreationTransaction);
@@ -86,7 +93,7 @@ public class Scrooge {
         if (signature != null) {
             Signature sign = Signature.getInstance("SHA256withDSA");
             sign.initVerify(publicKeys.get(0));
-            byte[] bytes = transaction.toString().getBytes();
+            byte[] bytes = transaction.transactionToSign().getBytes();
             sign.update(bytes);
             return sign.verify(signature);
         }
@@ -96,36 +103,24 @@ public class Scrooge {
     private void createNewBlock(boolean shouldAdd) throws NoSuchAlgorithmException {
         if (shouldAdd) {
             this.lastBlockHash = this.blockChain.AddBlock(this.currentBlock);
+            users.addToSavedHash(this.lastBlockHash);
             // loop over the transactions in that block and update the user's info
             for (Transaction transaction : currentBlock.transactions) {
                 if (transaction.type == "coin Creation") {
                     int indexOfUser = publicKeys.indexOf(transaction.receiver);
-                    peopleInfo.get(indexOfUser).add(transaction);
+                    users.addToPeopleInfo(transaction, indexOfUser);
                 } else if (transaction.type.equals("Transaction")) {
-                    // update the user's easy access data
                     int indexOfReciver = publicKeys.indexOf(transaction.receiver);
-                    peopleInfo.get(indexOfReciver).add(transaction);
-
-                    // remove the transaction from the sender array
-
-                    int indexOfSender = publicKeys.indexOf(transaction.sender);
-                    // loop over the user info and get the transaction with the sent coins
-                    // transaction id
-                    for (int i = 0; i < peopleInfo.get(indexOfSender).size(); i++) {
-                        if (peopleInfo.get(indexOfSender).get(i).id == transaction.id) {
-                            peopleInfo.get(indexOfSender).remove(i);
-                            break;
-                        }
-                    }
+                    users.addToPeopleInfo(transaction, indexOfReciver);
                 }
             }
-
+            System.out.println("-------------SCROOOGE ADDED A NEW BLOCK TO THE BLOCK CHAIN-------------");
             this.currentBlock = new Block(utilities.toHexString(lastBlockHash));
         }
     }
 
-    public boolean AddTransaction(Transaction transaction)
-            throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
+    public boolean AddTransaction(Transaction transaction) throws InvalidKeyException, NoSuchAlgorithmException,
+            SignatureException, InvalidKeySpecException, NoSuchProviderException, IOException {
 
         // validate the transaction in the rest of the blockchain
         if (transaction.type.equals("Transaction")) {
@@ -135,8 +130,10 @@ public class Scrooge {
                 return false;
             // get the coin id which contains the transaction Id and go for that ID and
             // check if the transaction is for him
+            int totalConsumedCoins = 0;
             for (Coin coin : transaction.consumedCoins) {
                 int transactionId = coin.transactionId;
+                totalConsumedCoins += coin.value;
                 // since I made the BlockChain is a array list we can jump to the block of the
                 // transaction :D
                 int lengthOfBlockChain = this.blockChain.size();
@@ -182,35 +179,60 @@ public class Scrooge {
                 }
             }
 
-            // else the transaction is valied
-            transaction.id = blockChain.size() * blocksize + this.currentBlock.size();
-            int index = 0;
-            for (Coin coin : transaction.createdCoins) {
-                coin.transactionId = transaction.id;
-                coin.indexInTransaction = index++;
+            // else the transaction is valied the scrooge consume the whole coin and send
+            // the sender a new coin with the remainder
+            if (transaction.sentValue <= totalConsumedCoins) {
+                if (transaction.sentValue < totalConsumedCoins) {
+                    Transaction coinCreationTransaction = new Transaction("coin Creation",
+                            totalConsumedCoins - transaction.sentValue, null, publicKeys.get(0), transaction.sender);
+                    coinCreationTransaction.signature = sign(coinCreationTransaction);
+                    createCoin(coinCreationTransaction);
+                }
+
+                //
+                Coin newCoin = new Coin(transaction.sentValue);
+                transaction.createdCoins.add(newCoin);
+                transaction.id = blockChain.size() * blocksize + this.currentBlock.size();
+                int index = 0;
+                for (Coin coin : transaction.createdCoins) {
+                    coin.transactionId = transaction.id;
+                    coin.indexInTransaction = index++;
+                }
+                System.out.println("Transaction send to scrooge");
+                currentBlock.add(transaction);
+                boolean shouldAdd = currentBlock.checkLength();
+                createNewBlock(shouldAdd);
+                return true;
+            } else {
+                System.out.println(
+                        "The sum of the coins You want to consume are less than the value that you want to send");
             }
-            currentBlock.add(transaction);
-            boolean shouldAdd = currentBlock.checkLength();
-            createNewBlock(shouldAdd);
-            return true;
 
         }
         System.out.println("the type is not recognized");
         return false;
     }
 
-    public boolean checkCoin() {
-        // check if the coin wasn't used in the blockChain
-        return false;
-    }
-
     private byte[] sign(Transaction transaction) throws InvalidKeySpecException, IOException, NoSuchAlgorithmException,
             NoSuchProviderException, InvalidKeyException, InvalidKeyException, SignatureException, SignatureException {
+
+        String key = "bucketheadghost0";
+        File encryptedFile = new File("users/" + 0 + "/private.encrypted");
+        File decryptedFile = new File("users/" + 0 + "/private");
+
+        try {
+            CryptoUtils.decrypt(key, encryptedFile, decryptedFile);
+        } catch (CryptoException ex) {
+            System.out.println(ex.getMessage());
+            ex.printStackTrace();
+        }
+
         File f = new File("users/0/private");
         FileInputStream fis = new FileInputStream(f);
         byte[] encKey = new byte[fis.available()];
         fis.read(encKey);
         fis.close();
+        f.delete();
 
         PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(encKey);
         KeyFactory keyFactory = KeyFactory.getInstance("DSA", "SUN");
@@ -218,8 +240,9 @@ public class Scrooge {
 
         Signature sign = Signature.getInstance("SHA256withDSA");
         sign.initSign(privateKey);
-        byte[] bytes = transaction.toString().getBytes();
+        byte[] bytes = transaction.transactionToSign().getBytes();
         sign.update(bytes);
+
         return sign.sign();
     }
 }

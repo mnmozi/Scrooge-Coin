@@ -30,6 +30,35 @@ public class BlockChain {
     // public boolean coinOwnership() {
 
     // }
+    // take the user hash and see if there is a block in the chain with that hash
+    // if so then we return ture and print how many blocks does the user did not
+    // see
+    public boolean sameBlockChain(byte[] hash) {
+        String currhashHex = utilities.toHexString(hash);
+        for (int i = this.blockChain.size() - 1; i >= 1; i--) {
+            Block lastblock = this.blockChain.get(i);
+            byte[] rehash = utilities.getSHA(lastblock.toString());
+            String rehashHex = utilities.toHexString(rehash);
+            if (!currhashHex.equals(rehashHex)) {
+                return false;
+            }
+            currhashHex = lastblock.prevBlockHashHex;
+        }
+        return true;
+
+    }
+
+    public String toString() {
+        int i = 0;
+
+        String output = "CURRUNT Block Chain \n";
+        for (Block block : blockChain) {
+            output += block.toString() + "(" + i + ")" + "\n";
+            i++;
+        }
+        return output;
+
+    }
 
     public int size() {
         return blockChain.size();
