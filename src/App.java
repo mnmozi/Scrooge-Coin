@@ -184,7 +184,7 @@ public class App {
                     utilities.output("the block chain is well", System.out, ps);
                 } else
                     // System.out.println("the scroope manipulated the block Chain");
-                    utilities.output("the scroope manipulated the block Chain", System.out, ps);
+                    utilities.output("the block Chain was manipulated", System.out, ps);
             } else if (commandParts.length == 2 && commandParts[0].equals("printblockchain")) {
                 int last = Integer.parseInt(commandParts[1]);
                 // System.out.println(scrooge.blockChain.printLast(last));
