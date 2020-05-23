@@ -1,3 +1,4 @@
+import java.io.PrintStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -36,4 +37,8 @@ public class utilities {
         return hexString.toString();
     }
 
+    public static void output(String text, PrintStream ps1, PrintStream ps2) {
+        ps1.println(text);
+        ps2.println(text);
+    }
 }

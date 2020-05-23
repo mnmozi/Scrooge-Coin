@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -23,11 +24,14 @@ public class Scrooge {
     private byte[] lastBlockHash;
     private int blocksize = 10;
     public Users users;
+    public PrintStream ps;
 
-    public Scrooge(ArrayList<PublicKey> publicKeys, int numberOfUsers, Users users) throws InvalidKeyException,
-            NoSuchAlgorithmException, SignatureException, InvalidKeySpecException, NoSuchProviderException, IOException,
+    public Scrooge(ArrayList<PublicKey> publicKeys, int numberOfUsers, Users users, PrintStream ps)
+            throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, InvalidKeySpecException,
+            NoSuchProviderException, IOException, InvalidKeySpecException, NoSuchProviderException, IOException,
             InvalidKeySpecException, NoSuchProviderException, IOException, InvalidKeySpecException,
-            NoSuchProviderException, IOException, InvalidKeySpecException, NoSuchProviderException, IOException {
+            NoSuchProviderException, IOException {
+        this.ps = ps;
         this.users = users;
         this.publicKeys = new ArrayList<PublicKey>(publicKeys);
         this.peopleInfo = new ArrayList<ArrayList<Transaction>>();
@@ -62,7 +66,8 @@ public class Scrooge {
 
         boolean signatureVerify = checkScroogeSignature(coinCreationTransaction);
         if (!signatureVerify) {
-            System.out.println("coin creation failed: you are not the scrooge");
+            // System.out.println("coin creation failed: you are not the scrooge");
+            utilities.output("coin creation failed: you are not the scrooge", System.out, this.ps);
             return false;
 
         }
@@ -116,7 +121,10 @@ public class Scrooge {
                     users.addToPeopleInfo(transaction, indexOfReciver);
                 }
             }
-            System.out.println("-------------SCROOOGE ADDED A NEW BLOCK TO THE BLOCK CHAIN-------------");
+            // System.out.println("-------------SCROOOGE ADDED A NEW BLOCK TO THE BLOCK
+            // CHAIN-------------");
+            utilities.output("-------------SCROOOGE ADDED A NEW BLOCK TO THE BLOCK CHAIN-------------", System.out,
+                    this.ps);
             this.currentBlock = new Block(utilities.toHexString(lastBlockHash));
         }
     }
@@ -141,7 +149,8 @@ public class Scrooge {
                 int lengthOfBlockChain = this.blockChain.size();
                 int wantedBlock = transactionId / blocksize;
                 if (wantedBlock > lengthOfBlockChain - 1) {
-                    System.out.println("the block of the transaction does not exist");
+                    // System.out.println("the block of the transaction does not exist");
+                    utilities.output("the block of the transaction does not exist", System.out, this.ps);
                     return false;
                 }
                 int wantedTrnsactionInBlock = (transactionId % blocksize);
@@ -149,7 +158,10 @@ public class Scrooge {
                         .get(wantedTrnsactionInBlock);
 
                 if (!wantedTransaction.createdCoins.get(coin.indexInTransaction).equals(coin)) {
-                    System.out.println("the coin that you want to spend is not equal to the one in the blockChain");
+                    // System.out.println("the coin that you want to spend is not equal to the one
+                    // in the blockChain");
+                    utilities.output("the coin that you want to spend is not equal to the one in the blockChain",
+                            System.out, this.ps);
                     return false;
                 }
 
@@ -162,7 +174,9 @@ public class Scrooge {
 
                             for (Coin innerCoin : transactionsInBlock.consumedCoins) {
                                 if (coin.equals(innerCoin)) {
-                                    System.out.println("the coin was consumed before that transaction");
+                                    // System.out.println("the coin was consumed before that transaction");
+                                    utilities.output("the coin was consumed before that transaction", System.out,
+                                            this.ps);
                                     return false;
                                 }
                             }
@@ -177,7 +191,8 @@ public class Scrooge {
                     }
                     for (Coin innerCoin : currenTransaction.consumedCoins) {
                         if (coin.equals(innerCoin)) {
-                            System.out.println("the coin was consumed before that transaction");
+                            // System.out.println("the coin was consumed before that transaction");
+                            utilities.output("the coin was consumed before that transaction", System.out, this.ps);
                             return false;
                         }
                     }
@@ -203,19 +218,26 @@ public class Scrooge {
                     coin.transactionId = transaction.id;
                     coin.indexInTransaction = index++;
                 }
-                System.out.println("Transaction send to scrooge");
+                // System.out.println("Transaction send to scrooge");
+                utilities.output("Transaction send to scrooge", System.out, this.ps);
                 currentBlock.add(transaction);
-                System.out.println(this.currentBlock.tohashString());
+                // System.out.println(this.currentBlock.tohashString());
+                utilities.output(this.currentBlock.tohashString(), System.out, this.ps);
                 boolean shouldAdd = currentBlock.checkLength();
                 createNewBlock(shouldAdd);
                 return true;
             } else {
-                System.out.println(
-                        "The sum of the coins You want to consume are less than the value that you want to send");
+                // System.out.println(
+                // "The sum of the coins You want to consume are less than the value that you
+                // want to send");
+                utilities.output(
+                        "The sum of the coins You want to consume are less than the value that you want to send",
+                        System.out, this.ps);
             }
 
         }
-        System.out.println("the type is not recognized");
+        // System.out.println("the type is not recognized");
+        utilities.output("the type is not recognized", System.out, this.ps);
         return false;
     }
 
@@ -229,7 +251,8 @@ public class Scrooge {
         try {
             CryptoUtils.decrypt(key, encryptedFile, decryptedFile);
         } catch (CryptoException ex) {
-            System.out.println(ex.getMessage());
+            // System.out.println(ex.getMessage());
+            utilities.output(ex.getMessage(), System.out, this.ps);
             ex.printStackTrace();
         }
 
