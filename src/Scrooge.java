@@ -21,7 +21,7 @@ public class Scrooge {
     BlockChain blockChain;
     private Block currentBlock;
     private byte[] lastBlockHash;
-    private int blocksize = 1;
+    private int blocksize = 10;
     public Users users;
 
     public Scrooge(ArrayList<PublicKey> publicKeys, int numberOfUsers, Users users) throws InvalidKeyException,
@@ -42,11 +42,11 @@ public class Scrooge {
     // in here i will add 10 transactions with 10 coins to the scrooge as a start
     private void createFirstBlock(int numberOfUsers) throws InvalidKeyException, NoSuchAlgorithmException,
             SignatureException, InvalidKeySpecException, NoSuchProviderException, IOException {
-        for (int i = 1; i < numberOfUsers; i++) {
+        for (int i = 0; i < numberOfUsers; i++) {
             // Coin coin = new Coin(i, 0, 1);
             // ArrayList<Coin> coins = new ArrayList<Coin>();
             // coins.add(coin);
-            Transaction coinCreationTransaction = new Transaction("coin Creation", 1, null, publicKeys.get(0),
+            Transaction coinCreationTransaction = new Transaction("coin Creation", 10, null, publicKeys.get(0),
                     publicKeys.get(i));
 
             coinCreationTransaction.signature = sign(coinCreationTransaction);
@@ -102,6 +102,8 @@ public class Scrooge {
 
     private void createNewBlock(boolean shouldAdd) throws NoSuchAlgorithmException {
         if (shouldAdd) {
+            this.currentBlock.ID = this.blockChain.size();
+            this.currentBlock.selfHash = utilities.getSHA(this.currentBlock.tohashString());
             this.lastBlockHash = this.blockChain.AddBlock(this.currentBlock);
             users.addToSavedHash(this.lastBlockHash);
             // loop over the transactions in that block and update the user's info
@@ -170,6 +172,9 @@ public class Scrooge {
                 // second we check the current block that wasn't published yet
                 for (int i = 0; i < this.currentBlock.size(); i++) {
                     Transaction currenTransaction = currentBlock.transactions.get(i);
+                    if (currenTransaction.consumedCoins == null) {
+                        continue;
+                    }
                     for (Coin innerCoin : currenTransaction.consumedCoins) {
                         if (coin.equals(innerCoin)) {
                             System.out.println("the coin was consumed before that transaction");
@@ -200,6 +205,7 @@ public class Scrooge {
                 }
                 System.out.println("Transaction send to scrooge");
                 currentBlock.add(transaction);
+                System.out.println(this.currentBlock.tohashString());
                 boolean shouldAdd = currentBlock.checkLength();
                 createNewBlock(shouldAdd);
                 return true;
@@ -216,7 +222,7 @@ public class Scrooge {
     private byte[] sign(Transaction transaction) throws InvalidKeySpecException, IOException, NoSuchAlgorithmException,
             NoSuchProviderException, InvalidKeyException, InvalidKeyException, SignatureException, SignatureException {
 
-        String key = "bucketheadghost0";
+        String key = "kingbuckethead00";
         File encryptedFile = new File("users/" + 0 + "/private.encrypted");
         File decryptedFile = new File("users/" + 0 + "/private");
 

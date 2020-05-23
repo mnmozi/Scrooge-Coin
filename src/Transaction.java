@@ -13,6 +13,7 @@ public class Transaction {
     ArrayList<Coin> consumedCoins; // if the type is coin creation consumedCoins will be null
     PublicKey sender;
     PublicKey receiver;
+    ArrayList<String> prevTransactionHash;
     byte[] signature;
 
     // public Transaction(int id, String type, ArrayList<Coin> coins,
@@ -90,6 +91,12 @@ public class Transaction {
             output += " sentValue: " + this.sentValue;
 
         }
+        if (this.prevTransactionHash != null) {
+            output += "\n" + "The Prev Transactions hash: ";
+            for (String prevHash : prevTransactionHash) {
+                output += prevHash + "\n";
+            }
+        }
         output += " Sender: " + sender + " receiver: " + receiver;
         return output;
 
@@ -117,6 +124,12 @@ public class Transaction {
                 for (Coin coin : this.createdCoins) {
                     output += coin.toString();
                 }
+            }
+        }
+        if (this.prevTransactionHash != null) {
+            output += "\n" + "The Prev Transactions hash: ";
+            for (String prevHash : prevTransactionHash) {
+                output += prevHash + "\n";
             }
         }
         output += "\n";

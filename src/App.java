@@ -52,13 +52,12 @@ public class App {
                 "The command should be one of the upcomming commands:" + "\n" + "myinfo <USER_NUMBER_FROM_THE_LIST>"
                         + "\n" + "send <VALUE> <FROM> <TO> <PASSWORD> <TRANSACTION_FROM_USER_INFO>" + "\n"
                         + "createcoin <VALUE> <PASSWORD_OF_SCROOGE> <TO>" + "\n" + "checkblockchain <user>" + "\n"
-                        + "printblockchain" + "\n" + "exit");
+                        + "printblockchain" + " <NUMBER_OF_BLOCK_TO_PRINT>" + "\n" + "exit");
     }
 
     public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InvalidKeyException,
             SignatureException, InvalidKeySpecException, NoSuchProviderException {
-
-        int numberOfUsers = 10;
+        int numberOfUsers = 100;
         Users users = new Users(numberOfUsers);
         Scrooge scrooge = new Scrooge(users.getPublicKeys(), numberOfUsers, users);
 
@@ -67,7 +66,7 @@ public class App {
         while (in.hasNextLine()) {
             String command = in.nextLine();
             String[] commandParts = command.split(" ");
-            if (commandParts[0].equals("myinfo")) {
+            if (commandParts.length == 2 && commandParts[0].equals("myinfo")) {
                 if (commandParts.length > 2) {
                     System.out.println("invalid command");
                     continue;
@@ -92,6 +91,7 @@ public class App {
                 String password = commandParts[4];
                 ArrayList<Transaction> userTransaction = users.getPeopleInfo().get(from);
                 ArrayList<Coin> consumedCoins = new ArrayList<Coin>();
+                ArrayList<String> transactionHashs = new ArrayList<String>();
                 boolean errorOccured = false;
                 for (int i = 5; i < commandParts.length; i++) {
                     int wantedTransaction = Integer.parseInt(commandParts[i]);
@@ -109,6 +109,9 @@ public class App {
                     for (Coin currCoin : userTransaction.get(wantedTransaction).createdCoins) {
                         consumedCoins.add(currCoin);
                     }
+                    transactionHashs.add(
+                            utilities.toHexString(utilities.getSHA(userTransaction.get(wantedTransaction).toString())));
+
                 }
                 if (errorOccured) {
                     standardHelp();
@@ -116,6 +119,8 @@ public class App {
                 }
                 Transaction transaction = new Transaction("Transaction", value, consumedCoins,
                         users.getPublicKeys().get(from), users.getPublicKeys().get(to));
+                transaction.prevTransactionHash = transactionHashs;
+
                 boolean status = sign(transaction, from, password);
                 if (!status) {
                     System.out.println("The password is wrong");
@@ -152,8 +157,9 @@ public class App {
                     System.out.println("the block chain is well");
                 } else
                     System.out.println("the scroope manipulated the block Chain");
-            } else if (command.equals("printblockchain")) {
-                System.out.println(scrooge.blockChain.toString());
+            } else if (commandParts.length == 2 && commandParts[0].equals("printblockchain")) {
+                int last = Integer.parseInt(commandParts[1]);
+                System.out.println(scrooge.blockChain.printLast(last));
             }
             standardHelp();
 

@@ -15,7 +15,7 @@ public class BlockChain {
         } else {
             // another block in the system
             Block lastBlock = blockChain.get(blockChain.size() - 1);
-            byte[] lastBlockHash = utilities.getSHA(lastBlock.toString());
+            byte[] lastBlockHash = utilities.getSHA(lastBlock.tohashString());
             String hashHex = utilities.toHexString(lastBlockHash);
             block.prevBlockHashHex = hashHex;
         }
@@ -58,6 +58,16 @@ public class BlockChain {
         }
         return output;
 
+    }
+
+    public String printLast(int last) {
+        int blocksize = this.blockChain.size();
+        String output = "";
+        for (int i = blocksize - 1; i >= blocksize - last; i--) {
+            Block block = this.blockChain.get(i);
+            output += block.toString() + "(" + i + ")" + "\n";
+        }
+        return output;
     }
 
     public int size() {

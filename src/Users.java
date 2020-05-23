@@ -58,7 +58,14 @@ public class Users {
             // the private key) and save the encryption in key.encrypted
             // we will give each user a password with 16 byte we will make it for all like
             // that
-            String key = "bucketheadghost" + i; // where i is the index of the user in the array
+            String key;
+            if (i < 10) {
+                key = "kingbuckethead0" + i;
+            } else {
+                key = "kingbuckethead" + i;
+            }
+            // String key = "bucketheadghost" + i; // where i is the index of the user in
+            // the array
             File inputFile = new File("users/" + i + "/private");
             File encryptedFile = new File("users/" + i + "/private.encrypted");
 
