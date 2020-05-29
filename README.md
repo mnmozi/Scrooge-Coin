@@ -1,5 +1,10 @@
 ## Examples
 
+The users In the system have passwords in this pattern ["kingbuckethead00", "kingbuckethead01","kingbuckethead02", ... , "kingbuckethead"99"]
+where kingbuckethead00 is the scrooge password that he needs to create coin.
+
+---
+
 Here I will assume I'm user 1 and as default my password will be "kingbuckethead01" and I want to send 5 coins to uesr 2
 
 1.  to view my coins (The transactions where I recived coins) and this also will show me my public key.
