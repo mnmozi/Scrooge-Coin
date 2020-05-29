@@ -177,6 +177,7 @@ public class Scrooge {
                                     // System.out.println("the coin was consumed before that transaction");
                                     utilities.output("the coin was consumed before that transaction", System.out,
                                             this.ps);
+                                    utilities.output(this.currentBlock.tohashString(), System.out, this.ps);
                                     return false;
                                 }
                             }
@@ -193,6 +194,7 @@ public class Scrooge {
                         if (coin.equals(innerCoin)) {
                             // System.out.println("the coin was consumed before that transaction");
                             utilities.output("the coin was consumed before that transaction", System.out, this.ps);
+                            utilities.output(this.currentBlock.tohashString(), System.out, this.ps);
                             return false;
                         }
                     }
@@ -239,6 +241,10 @@ public class Scrooge {
         // System.out.println("the type is not recognized");
         utilities.output("the type is not recognized", System.out, this.ps);
         return false;
+    }
+
+    public void printCurrBlock() {
+        utilities.output(this.currentBlock.tohashString(), System.out, this.ps);
     }
 
     private byte[] sign(Transaction transaction) throws InvalidKeySpecException, IOException, NoSuchAlgorithmException,

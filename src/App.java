@@ -66,7 +66,8 @@ public class App {
                 "The command should be one of the upcomming commands:" + "\n" + "myinfo <USER_NUMBER_FROM_THE_LIST>"
                         + "\n" + "send <VALUE> <FROM> <TO> <PASSWORD> <TRANSACTION_FROM_USER_INFO>" + "\n"
                         + "createcoin <VALUE> <PASSWORD_OF_SCROOGE> <TO>" + "\n" + "checkblockchain <user>" + "\n"
-                        + "printblockchain" + " <NUMBER_OF_BLOCK_TO_PRINT>" + "\n" + "exit",
+                        + "printblockchain" + " <NUMBER_OF_BLOCK_TO_PRINT>" + "\n" + "exit" + "\n"
+                        + "Please read the README.md to see examples",
                 System.out, ps);
     }
 
@@ -91,6 +92,7 @@ public class App {
                 }
                 int userIndex = Integer.parseInt(commandParts[1]);
                 int i = 0;
+                utilities.output("Your public key is: " + users.getPublicKeys().get(userIndex), System.out, ps);
                 for (Transaction transaction : users.getPeopleInfo().get(userIndex)) {
                     // System.out.println("-------------" + "Transaction: " + i + "-------------");
                     utilities.output("-------------" + "Transaction: " + i + "-------------", System.out, ps);
@@ -170,9 +172,11 @@ public class App {
                     continue;
                 }
                 boolean result = scrooge.createCoin(coinCreation);
-                if (result)
+                if (result) {
                     // System.out.println("COIN CREATED SCROOGE");
                     utilities.output("COIN CREATED SCROOGE", System.out, ps);
+                    scrooge.printCurrBlock();
+                }
             } else if (command.equals("exit")) {
                 break;
             } else if (commandParts.length == 2 && commandParts[0].equals("checkblockchain")) {

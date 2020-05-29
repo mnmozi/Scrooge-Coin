@@ -63,9 +63,16 @@ public class BlockChain {
     public String printLast(int last) {
         int blocksize = this.blockChain.size();
         String output = "";
-        for (int i = blocksize - 1; i >= blocksize - last; i--) {
-            Block block = this.blockChain.get(i);
-            output += block.toString() + "(" + i + ")" + "\n";
+        if (last == -1) {
+            for (int i = 0; i < blocksize; i++) {
+                Block block = this.blockChain.get(i);
+                output += block.toString() + "(" + i + ")" + "\n";
+            }
+        } else {
+            for (int i = blocksize - (last); i < blocksize; i++) {
+                Block block = this.blockChain.get(i);
+                output += block.toString() + "(" + i + ")" + "\n";
+            }
         }
         return output;
     }
